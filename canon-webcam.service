@@ -1,0 +1,26 @@
+[Unit]
+Description=Canon EOS -> virtual webcam (webcamize)
+Documentation=file:/usr/local/share/doc/canon-webcam/README.md
+After=systemd-modules-load.service
+# Не сдаваться, если камера ещё не подключена: ждём бесконечно.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+# Юнит должен работать от root: webcamize грузит v4l2loopback и создаёт
+# /dev/videoN через /dev/v4l2loopback. Без root он пытается вызвать sudo,
+# что внутри systemd не сработает.
+#
+# -p 30 — потолок частоты кадров (по умолчанию 60). Для M50 больше 30 не нужно.
+# -c "Canon EOS M50" — можно жёстко закрепить камеру, если их несколько.
+ExecStart=/usr/local/bin/webcamize -p 30
+Restart=always
+RestartSec=5
+# КРИТИЧНО: webcamize убирает созданный /dev/videoN только по SIGINT.
+# На SIGTERM (умолчание systemd) он умирает молча, оставляя устройство висеть.
+KillSignal=SIGINT
+TimeoutStopSec=15
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

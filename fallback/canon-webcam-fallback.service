@@ -1,0 +1,29 @@
+[Unit]
+Description=Canon EOS -> virtual webcam (fallback daemon: gphoto2 + ffmpeg)
+Documentation=file:/usr/local/share/doc/canon-webcam/fallback/README.md
+After=systemd-modules-load.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/canon-webcam-fallback
+Restart=always
+RestartSec=5
+Nice=5
+# Гасим всей группой: bash-скрипт ждёт пайплайн и не обработает trap,
+# пока gphoto2/ffmpeg не завершатся. Устройство /dev/videoN при этом остаётся,
+# но скрипт при следующем старте переиспользует его по метке — не накапливается.
+KillMode=control-group
+TimeoutStopSec=5
+
+# Метка виртуального устройства (её видно в Zoom/Meet).
+Environment=CARD_LABEL=Canon EOS
+# Пусто = отдавать кадр как есть. Например: 1280:720 включает кроп в 16:9.
+Environment=OUT_SIZE=
+# crop (заполнить, обрезав края) или pad (вписать, добавив поля).
+Environment=OUT_MODE=crop
+# Доп. аргументы gphoto2, например: --set-config viewfinder=1
+Environment=EXTRA_GPHOTO_ARGS=
+
+[Install]
+WantedBy=multi-user.target
