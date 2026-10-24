@@ -42,7 +42,7 @@ ${B}Canon EOS как веб-камера на Linux${N}
 
 Опции:
   (без опций)    установить webcamize + службу (рекомендуется)
-  --crop         то же, плюс fallback-демон с кадрированием в 16:9 (1280x720)
+  --crop         fallback-демон с кадрированием в 16:9 (1280x720)
   --fallback     только fallback-демон (gphoto2 + ffmpeg), без webcamize
   --uninstall    удалить службы и файлы
   -h, --help     эта справка
@@ -56,7 +56,7 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --crop)      CROP="1280:720" ;;
+    --crop)      CROP="1280:720"; MODE="fallback" ;;
     --fallback)  MODE="fallback" ;;
     --uninstall) MODE="uninstall" ;;
     -h|--help)   usage; exit 0 ;;
@@ -165,6 +165,12 @@ install_main() {
 
 install_fallback() {
   step "Fallback-демон (gphoto2 + ffmpeg)"
+  # Два источника кадров одновременно не уживутся: камера одна.
+  if [ -f "$UNIT_DIR/$UNIT" ]; then
+    systemctl disable --now "$UNIT" >/dev/null 2>&1 || true
+    rm -f "$UNIT_DIR/$UNIT"
+    ok "основная служба отключена"
+  fi
   curl -fsSL "$RAW/fallback/webcam.sh" -o "$FB_BIN" || die "Не удалось скачать webcam.sh"
   chmod 755 "$FB_BIN"
   curl -fsSL "$RAW/fallback/$FB_UNIT" -o "$UNIT_DIR/$FB_UNIT" || die "Не удалось скачать $FB_UNIT"
